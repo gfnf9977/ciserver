@@ -1,0 +1,25 @@
+@model IEnumerable<CiServer.Core.Entities.Project>
+@{ ViewData["Title"] = "Всі проєкти"; }
+
+<h2>Список проєктів</h2>
+<a href="/Projects/Create" class="btn btn-primary mb-3">Додати новий проєкт</a>
+
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>Назва</th>
+            <th>Репозиторій</th>
+            <th>Дата створення</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Name</td>
+                <td><a href="@item.RepoUrl" target="_blank">@item.RepoUrl</a></td>
+                <td>@item.CreatedAt</td>
+            </tr>
+        }
+    </tbody>
+</table>

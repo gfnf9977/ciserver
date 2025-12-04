@@ -72,3 +72,6 @@ C:\КПІ\Ворк\Bogdan4ek\ТРПЗ\CiServer\CiServer.Web\obj\Debug\net9.0\ref
 C:\КПІ\Ворк\Bogdan4ek\ТРПЗ\CiServer\CiServer.Web\obj\Debug\net9.0\CiServer.Web.pdb
 C:\КПІ\Ворк\Bogdan4ek\ТРПЗ\CiServer\CiServer.Web\obj\Debug\net9.0\CiServer.Web.genruntimeconfig.cache
 C:\КПІ\Ворк\Bogdan4ek\ТРПЗ\CiServer\CiServer.Web\obj\Debug\net9.0\ref\CiServer.Web.dll
+C:\КПІ\Ворк\Bogdan4ek\ТРПЗ\CiServer\CiServer.Web\obj\Debug\net9.0\CiServer.Web.RazorAssemblyInfo.cache
+C:\КПІ\Ворк\Bogdan4ek\ТРПЗ\CiServer\CiServer.Web\obj\Debug\net9.0\CiServer.Web.RazorAssemblyInfo.cs
+C:\КПІ\Ворк\Bogdan4ek\ТРПЗ\CiServer\CiServer.Web\obj\Debug\net9.0\CiServer.Web.sourcelink.json

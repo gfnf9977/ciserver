@@ -9,3 +9,4 @@ C:\КПІ\Ворк\Bogdan4ek\ТРПЗ\CiServer\CiServer.Core\obj\Debug\net9.0\Ci
 C:\КПІ\Ворк\Bogdan4ek\ТРПЗ\CiServer\CiServer.Core\obj\Debug\net9.0\refint\CiServer.Core.dll
 C:\КПІ\Ворк\Bogdan4ek\ТРПЗ\CiServer\CiServer.Core\obj\Debug\net9.0\CiServer.Core.pdb
 C:\КПІ\Ворк\Bogdan4ek\ТРПЗ\CiServer\CiServer.Core\obj\Debug\net9.0\ref\CiServer.Core.dll
+C:\КПІ\Ворк\Bogdan4ek\ТРПЗ\CiServer\CiServer.Core\obj\Debug\net9.0\CiServer.Core.sourcelink.json
