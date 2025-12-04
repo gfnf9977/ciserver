@@ -1,5 +1,6 @@
-using CiServer.Data;
 using CiServer.Core.Entities;
+using CiServer.Core.Mediator;
+using CiServer.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,10 +11,12 @@ namespace CiServer.Web.Controllers;
 public class AgentController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
+    private readonly IMediator _mediator;
 
-    public AgentController(ApplicationDbContext context)
+    public AgentController(ApplicationDbContext context, IMediator mediator)
     {
         _context = context;
+        _mediator = mediator;
     }
 
     [HttpGet("work")]
@@ -24,38 +27,27 @@ public class AgentController : ControllerBase
             .FirstOrDefaultAsync(b => b.Status == BuildStatus.Pending);
 
         if (build == null)
-            return NoContent(); 
+            return NoContent();
 
-        build.Status = BuildStatus.Running;
-        build.StartTime = DateTime.UtcNow;
+        build.RestoreState();
+        build.Start();
         await _context.SaveChangesAsync();
 
-        Console.WriteLine($"[SERVER] Gave build {build.BuildId} to an Agent.");
-        
+        Console.WriteLine($"[SERVER] Assigned job {build.BuildId}");
         return Ok(build);
     }
 
     [HttpPost("finish")]
-    public async Task<IActionResult> FinishWork([FromBody] Build result)
+    public IActionResult FinishWork([FromBody] Build result)
     {
-        var build = await _context.Builds.FindAsync(result.BuildId);
-        if (build == null) return NotFound();
-
-        build.Status = result.Status;
-        build.EndTime = DateTime.UtcNow;
-        
-        await _context.SaveChangesAsync();
-        Console.WriteLine($"[SERVER] Build {build.BuildId} finished with status: {build.Status}");
-        
+        _mediator.Notify(this, "JobFinished", result);
         return Ok();
     }
 
     [HttpPost("log")]
-    public async Task<IActionResult> AddLog([FromBody] BuildLog log)
+    public IActionResult AddLog([FromBody] BuildLog log)
     {
-        log.Timestamp = DateTime.UtcNow;
-        _context.BuildLogs.Add(log);
-        await _context.SaveChangesAsync();
+        _mediator.Notify(this, "LogReceived", log);
         return Ok();
     }
 }

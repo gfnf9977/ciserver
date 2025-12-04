@@ -17,7 +17,9 @@
         @foreach (var item in Model)
         {
             <tr>
-                <td>@item.Name</td>
+                <td>
+                    <a href="/Projects/Details/@item.ProjectId">@item.Name</a>
+                </td>
                 <td><a href="@item.RepoUrl" target="_blank">@item.RepoUrl</a></td>
                 <td>@item.CreatedAt</td>
                 <td>

@@ -32,12 +32,20 @@ public class ProjectsController : Controller
         {
             project.ProjectId = Guid.NewGuid();
             project.CreatedAt = DateTime.UtcNow;
-
             _context.Projects.Add(project);
             await _context.SaveChangesAsync();
-
             return RedirectToAction(nameof(Index));
         }
+        return View(project);
+    }
+
+    public async Task<IActionResult> Details(Guid id)
+    {
+        var project = await _context.Projects
+            .Include(p => p.Builds)
+            .FirstOrDefaultAsync(m => m.ProjectId == id);
+        if (project == null)
+            return NotFound();
         return View(project);
     }
 
@@ -51,10 +59,8 @@ public class ProjectsController : Controller
             Status = BuildStatus.Pending,
             StartTime = DateTime.UtcNow
         };
-
         _context.Builds.Add(build);
         await _context.SaveChangesAsync();
-
         return RedirectToAction(nameof(Index));
     }
 }

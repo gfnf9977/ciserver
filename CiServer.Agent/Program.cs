@@ -2,11 +2,10 @@
 using CiServer.Core.Entities;
 using CiServer.Core.Commands;
 
-const string SERVER_URL = "http://localhost:5086"; 
+const string SERVER_URL = "http://localhost:5086";
 using var httpClient = new HttpClient { BaseAddress = new Uri(SERVER_URL) };
 
-Console.WriteLine($"--- CI AGENT STARTED ---");
-Console.WriteLine($"Connecting to server: {SERVER_URL}");
+Console.WriteLine($"--- CI AGENT CONNECTED TO {SERVER_URL} ---");
 
 while (true)
 {
@@ -19,48 +18,53 @@ while (true)
             var build = await response.Content.ReadFromJsonAsync<Build>();
             if (build != null)
             {
-                Console.WriteLine($"\n[AGENT] Received Job: Build {build.BuildId} for repo {build.Project?.RepoUrl}");
-                
-                await ProcessBuild(build, httpClient);
+                await ExecutePipelineAsync(build, httpClient);
             }
         }
         else
         {
-            Console.Write("."); 
+            Console.Write(".");
+            await Task.Delay(2000);
         }
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"\n[AGENT] Error connecting to server: {ex.Message}");
+        Console.WriteLine($"[ERROR] Server unavailable: {ex.Message}");
+        await Task.Delay(5000);
     }
-
-    await Task.Delay(3000);
 }
 
-static async Task ProcessBuild(Build build, HttpClient client)
+static async Task ExecutePipelineAsync(Build build, HttpClient client)
 {
+    Console.WriteLine($"\n[JOB STARTED] BuildId: {build.BuildId}");
+
     var pipeline = new BuildPipeline();
+    var gitCmd = new CloneRepositoryCommand(build);
+    var buildCmd = new CompileCodeCommand(build);
+    var testCmd = new RunTestsCommand(build);
 
-    var cmd1 = new CloneRepositoryCommand(build);
-    var cmd2 = new CompileCodeCommand(build);
-    var cmd3 = new RunTestsCommand(build);
+    var decoratedGit = new HttpReportDecorator(gitCmd, client, build.BuildId);
+    var decoratedBuild = new HttpReportDecorator(buildCmd, client, build.BuildId);
+    var decoratedTest = new HttpReportDecorator(testCmd, client, build.BuildId);
 
-    pipeline.AddCommand(new HttpReportDecorator(cmd1, client, build.BuildId));
-    pipeline.AddCommand(new HttpReportDecorator(cmd2, client, build.BuildId));
-    pipeline.AddCommand(new HttpReportDecorator(cmd3, client, build.BuildId));
+    pipeline.AddCommand(decoratedGit);
+    pipeline.AddCommand(decoratedBuild);
+    pipeline.AddCommand(decoratedTest);
 
-    try 
+    bool success = true;
+    try
     {
         pipeline.Run();
-        build.Status = BuildStatus.Success;
     }
     catch
     {
-        build.Status = BuildStatus.Failed;
+        success = false;
     }
 
+    build.Status = success ? BuildStatus.Success : BuildStatus.Failed;
     await client.PostAsJsonAsync("/api/agent/finish", build);
-    Console.WriteLine("[AGENT] Job Finished. Waiting for new work...");
+
+    Console.WriteLine($"[JOB FINISHED] Status: {build.Status}\n");
 }
 
 public class HttpReportDecorator : CommandDecorator
@@ -76,20 +80,25 @@ public class HttpReportDecorator : CommandDecorator
 
     public override void Execute()
     {
-        string cmdName = _wrappedCommand.GetType().Name;
-        SendLog($"[Agent] Started {cmdName}...");
-        
-        base.Execute(); 
+        string name = _wrappedCommand.GetType().Name;
+        SendLog($"[Start] {name}");
 
-        SendLog($"[Agent] Finished {cmdName}.");
+        try
+        {
+            base.Execute();
+            SendLog($"[Success] {name}");
+        }
+        catch (Exception ex)
+        {
+            SendLog($"[Error] {name}: {ex.Message}");
+            throw;
+        }
     }
 
     private void SendLog(string content)
     {
-        _client.PostAsJsonAsync("/api/agent/log", new BuildLog 
-        { 
-            BuildId = _buildId, 
-            Content = content 
-        });
+        var log = new BuildLog { BuildId = _buildId, Content = content };
+        _client.PostAsJsonAsync("/api/agent/log", log);
+        Console.WriteLine($"   -> Sent log: {content}");
     }
 }

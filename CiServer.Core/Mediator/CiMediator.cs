@@ -1,46 +1,46 @@
 using CiServer.Core.Entities;
+using CiServer.Core.Interfaces;
 
 namespace CiServer.Core.Mediator;
 
 public class CiMediator : IMediator
 {
-    private readonly BuildProcessComponent _buildComponent;
-    private readonly NotificationComponent _notificationComponent;
-    private readonly DbArchiverComponent _dbArchiverComponent;
+    private readonly IRepository<Build, Guid> _buildRepo;
+    private readonly IRepository<BuildLog, Guid> _logRepo;
 
     public CiMediator(
-        BuildProcessComponent buildComponent, 
-        NotificationComponent notificationComponent, 
-        DbArchiverComponent dbArchiverComponent)
+        IRepository<Build, Guid> buildRepo,
+        IRepository<BuildLog, Guid> logRepo)
     {
-        _buildComponent = buildComponent;
-        _buildComponent.SetMediator(this);
-
-        _notificationComponent = notificationComponent;
-        _notificationComponent.SetMediator(this);
-
-        _dbArchiverComponent = dbArchiverComponent;
-        _dbArchiverComponent.SetMediator(this);
+        _buildRepo = buildRepo;
+        _logRepo = logRepo;
     }
 
     public void Notify(object sender, string ev, object? data = null)
     {
-        if (ev == "BuildFinished")
+        HandleAsync(ev, data).Wait();
+    }
+
+    private async Task HandleAsync(string ev, object? data)
+    {
+        if (ev == "JobFinished" && data is Build resultBuild)
         {
-            Console.WriteLine("\n[Mediator] Reacting to 'BuildFinished' event...");
-            
-            var build = data as Build;
-
-            _dbArchiverComponent.SaveResultsToDb(build);
-
-            if (build.Status == BuildStatus.Success)
+            var build = await _buildRepo.GetByIdAsync(resultBuild.BuildId);
+            if (build != null)
             {
-                _notificationComponent.SendEmail($"Build {build.BuildId} was SUCCESSFUL!");
+                build.RestoreState();
+                bool isSuccess = resultBuild.Status == BuildStatus.Success;
+                build.Finish(isSuccess);
+                build.EndTime = DateTime.UtcNow;
+                await _buildRepo.SaveChangesAsync();
+                Console.WriteLine($"[MEDIATOR] Build {build.BuildId} finalized. Status: {build.Status}");
             }
-            else
-            {
-                _notificationComponent.SendEmail($"Build {build.BuildId} FAILED!");
-            }
+        }
+        else if (ev == "LogReceived" && data is BuildLog log)
+        {
+            await _logRepo.AddAsync(log);
+            await _logRepo.SaveChangesAsync();
+            Console.WriteLine($"[MEDIATOR] Log saved: {log.Content}");
         }
     }
 }
