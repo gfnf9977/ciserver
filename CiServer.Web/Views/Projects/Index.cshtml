@@ -10,6 +10,7 @@
             <th>Назва</th>
             <th>Репозиторій</th>
             <th>Дата створення</th>
+            <th>Дії</th>
         </tr>
     </thead>
     <tbody>
@@ -19,6 +20,11 @@
                 <td>@item.Name</td>
                 <td><a href="@item.RepoUrl" target="_blank">@item.RepoUrl</a></td>
                 <td>@item.CreatedAt</td>
+                <td>
+                    <form action="/api/TestState" method="get" target="_blank">
+                       <a href="/Projects/StartBuild/@item.ProjectId" class="btn btn-warning btn-sm">Запустити Build</a>
+                    </form>
+                </td>
             </tr>
         }
     </tbody>
